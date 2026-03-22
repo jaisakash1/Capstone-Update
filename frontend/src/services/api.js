@@ -9,7 +9,22 @@ const api = axios.create({
     },
 });
 
-// Patient APIs
+// Attach JWT token to every request
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+// Auth APIs
+export const authAPI = {
+    login: (data) => api.post('/auth/login', data),
+    getMe: () => api.get('/auth/me'),
+};
+
+// Patient APIs (hospital side)
 export const patientAPI = {
     getAll: (params) => api.get('/patients', { params }),
     getById: (id) => api.get(`/patients/${id}`),
@@ -17,6 +32,13 @@ export const patientAPI = {
     update: (id, data) => api.put(`/patients/${id}`, data),
     delete: (id) => api.delete(`/patients/${id}`),
     getStats: () => api.get('/patients/stats/dashboard'),
+    getCritical: () => api.get('/patients/stats/critical'),
+    getCredentials: (id) => api.get(`/patients/${id}/credentials`),
+    resetPassword: (id) => api.post(`/patients/${id}/reset-password`),
+    addDisease: (id, data) => api.post(`/patients/${id}/diseases`, data),
+    deleteDisease: (id, index) => api.delete(`/patients/${id}/diseases/${index}`),
+    addSymptom: (id, data) => api.post(`/patients/${id}/symptoms`, data),
+    deleteSymptom: (id, index) => api.delete(`/patients/${id}/symptoms/${index}`),
 };
 
 // Readmission APIs
@@ -44,6 +66,24 @@ export const reportAPI = {
         return `${API_BASE_URL}/reports/patient/${patientId}`;
     },
     getSummary: () => api.get('/reports/summary'),
+    getCharts: () => api.get('/reports/charts'),
+};
+
+// Hospital APIs
+export const hospitalAPI = {
+    getProfile: () => api.get('/hospital'),
+    updateProfile: (data) => api.put('/hospital', data),
+};
+
+// Patient Portal APIs (patient side)
+export const portalAPI = {
+    getDashboard: () => api.get('/portal/dashboard'),
+    getReports: () => api.get('/portal/reports'),
+    getPendingReports: () => api.get('/portal/pending-reports'),
+    getDiseases: () => api.get('/portal/diseases'),
+    getSymptoms: () => api.get('/portal/symptoms'),
+    getAppointments: () => api.get('/portal/appointments'),
+    downloadReport: () => `${API_BASE_URL}/portal/download-report`,
 };
 
 export default api;
