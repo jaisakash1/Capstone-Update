@@ -6,11 +6,13 @@ function NewPatient() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [credentials, setCredentials] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         gender: 'Male',
         age: '',
         phone: '',
+        email: '',
         timeInHospital: '',
         emergencyVisits: 0,
         inpatientVisits: 0,
@@ -54,6 +56,11 @@ function NewPatient() {
 
             const patient = response.data;
 
+            // Show credentials modal
+            if (patient.credentials) {
+                setCredentials(patient.credentials);
+            }
+
             if (patient.isEligible) {
                 setMessage({
                     type: 'success',
@@ -72,6 +79,7 @@ function NewPatient() {
                 gender: 'Male',
                 age: '',
                 phone: '',
+                email: '',
                 timeInHospital: '',
                 emergencyVisits: 0,
                 inpatientVisits: 0,
@@ -81,8 +89,6 @@ function NewPatient() {
                 sugarLevel: '',
                 diabetesMed: 'Yes'
             });
-
-            setTimeout(() => navigate('/patients'), 2000);
         } catch (error) {
             setMessage({
                 type: 'danger',
@@ -91,6 +97,19 @@ function NewPatient() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const copyCredentials = () => {
+        if (credentials) {
+            const text = `Patient ID: ${credentials.patientId}\nPassword: ${credentials.password}`;
+            navigator.clipboard.writeText(text);
+            alert('Credentials copied to clipboard!');
+        }
+    };
+
+    const closeCredentials = () => {
+        setCredentials(null);
+        navigate('/patients');
     };
 
     return (
@@ -106,31 +125,45 @@ function NewPatient() {
                 </div>
             )}
 
+            {/* Credentials Modal */}
+            {credentials && (
+                <div className="modal-overlay">
+                    <div className="modal credentials-modal">
+                        <div className="modal-header">
+                            <h2>🔐 Patient Login Credentials</h2>
+                        </div>
+                        <div className="credentials-content">
+                            <div className="alert alert-warning" style={{ marginBottom: '20px' }}>
+                                ⚠️ Please hand these credentials to the patient. They will not be shown again.
+                            </div>
+                            <div className="credential-field">
+                                <label>Patient ID</label>
+                                <div className="credential-value">{credentials.patientId}</div>
+                            </div>
+                            <div className="credential-field">
+                                <label>Password</label>
+                                <div className="credential-value">{credentials.password}</div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                            <button className="btn btn-primary" onClick={copyCredentials}>📋 Copy Credentials</button>
+                            <button className="btn btn-outline" onClick={closeCredentials}>✓ Done</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="card">
                 <form onSubmit={handleSubmit}>
                     <h3 style={{ marginBottom: '20px', color: 'var(--text-secondary)' }}>👤 Basic Information</h3>
                     <div className="form-grid">
                         <div className="form-group">
                             <label className="form-label">Patient Name *</label>
-                            <input
-                                type="text"
-                                name="name"
-                                className="form-input"
-                                value={formData.name}
-                                onChange={handleChange}
-                                placeholder="Enter full name"
-                                required
-                            />
+                            <input type="text" name="name" className="form-input" value={formData.name} onChange={handleChange} placeholder="Enter full name" required />
                         </div>
                         <div className="form-group">
                             <label className="form-label">Gender *</label>
-                            <select
-                                name="gender"
-                                className="form-select"
-                                value={formData.gender}
-                                onChange={handleChange}
-                                required
-                            >
+                            <select name="gender" className="form-select" value={formData.gender} onChange={handleChange} required>
                                 <option value="Male">Male</option>
                                 <option value="Female">Female</option>
                                 <option value="Other">Other</option>
@@ -138,28 +171,15 @@ function NewPatient() {
                         </div>
                         <div className="form-group">
                             <label className="form-label">Age *</label>
-                            <input
-                                type="number"
-                                name="age"
-                                className="form-input"
-                                value={formData.age}
-                                onChange={handleChange}
-                                placeholder="Enter age"
-                                min="0"
-                                max="150"
-                                required
-                            />
+                            <input type="number" name="age" className="form-input" value={formData.age} onChange={handleChange} placeholder="Enter age" min="0" max="150" required />
                         </div>
                         <div className="form-group">
                             <label className="form-label">Phone Number</label>
-                            <input
-                                type="tel"
-                                name="phone"
-                                className="form-input"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                placeholder="Enter phone number"
-                            />
+                            <input type="tel" name="phone" className="form-input" value={formData.phone} onChange={handleChange} placeholder="Enter phone number" />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Email (optional — for sending credentials)</label>
+                            <input type="email" name="email" className="form-input" value={formData.email} onChange={handleChange} placeholder="patient@email.com" />
                         </div>
                     </div>
 
@@ -167,40 +187,15 @@ function NewPatient() {
                     <div className="form-grid">
                         <div className="form-group">
                             <label className="form-label">Days in Hospital *</label>
-                            <input
-                                type="number"
-                                name="timeInHospital"
-                                className="form-input"
-                                value={formData.timeInHospital}
-                                onChange={handleChange}
-                                placeholder="Number of days"
-                                min="0"
-                                required
-                            />
+                            <input type="number" name="timeInHospital" className="form-input" value={formData.timeInHospital} onChange={handleChange} placeholder="Number of days" min="0" required />
                         </div>
                         <div className="form-group">
                             <label className="form-label">Emergency Visits</label>
-                            <input
-                                type="number"
-                                name="emergencyVisits"
-                                className="form-input"
-                                value={formData.emergencyVisits}
-                                onChange={handleChange}
-                                placeholder="Number of emergency visits"
-                                min="0"
-                            />
+                            <input type="number" name="emergencyVisits" className="form-input" value={formData.emergencyVisits} onChange={handleChange} placeholder="Number of emergency visits" min="0" />
                         </div>
                         <div className="form-group">
                             <label className="form-label">Inpatient Visits</label>
-                            <input
-                                type="number"
-                                name="inpatientVisits"
-                                className="form-input"
-                                value={formData.inpatientVisits}
-                                onChange={handleChange}
-                                placeholder="Number of inpatient visits"
-                                min="0"
-                            />
+                            <input type="number" name="inpatientVisits" className="form-input" value={formData.inpatientVisits} onChange={handleChange} placeholder="Number of inpatient visits" min="0" />
                         </div>
                     </div>
 
@@ -208,12 +203,7 @@ function NewPatient() {
                     <div className="form-grid">
                         <div className="form-group">
                             <label className="form-label">HbA1c Result</label>
-                            <select
-                                name="hba1c"
-                                className="form-select"
-                                value={formData.hba1c}
-                                onChange={handleChange}
-                            >
+                            <select name="hba1c" className="form-select" value={formData.hba1c} onChange={handleChange}>
                                 <option value="Pending">Pending</option>
                                 <option value="Normal">Normal</option>
                                 <option value="Abnormal">Abnormal</option>
@@ -222,12 +212,7 @@ function NewPatient() {
                         </div>
                         <div className="form-group">
                             <label className="form-label">Glucose Result</label>
-                            <select
-                                name="glucose"
-                                className="form-select"
-                                value={formData.glucose}
-                                onChange={handleChange}
-                            >
+                            <select name="glucose" className="form-select" value={formData.glucose} onChange={handleChange}>
                                 <option value="Pending">Pending</option>
                                 <option value="Normal">Normal</option>
                                 <option value="Abnormal">Abnormal</option>
@@ -236,36 +221,15 @@ function NewPatient() {
                         </div>
                         <div className="form-group">
                             <label className="form-label">Blood Pressure (Systolic)</label>
-                            <input
-                                type="number"
-                                name="systolic"
-                                className="form-input"
-                                value={formData.bloodPressure.systolic}
-                                onChange={handleChange}
-                                placeholder="e.g., 120"
-                            />
+                            <input type="number" name="systolic" className="form-input" value={formData.bloodPressure.systolic} onChange={handleChange} placeholder="e.g., 120" />
                         </div>
                         <div className="form-group">
                             <label className="form-label">Blood Pressure (Diastolic)</label>
-                            <input
-                                type="number"
-                                name="diastolic"
-                                className="form-input"
-                                value={formData.bloodPressure.diastolic}
-                                onChange={handleChange}
-                                placeholder="e.g., 80"
-                            />
+                            <input type="number" name="diastolic" className="form-input" value={formData.bloodPressure.diastolic} onChange={handleChange} placeholder="e.g., 80" />
                         </div>
                         <div className="form-group">
                             <label className="form-label">Sugar Level (mg/dL)</label>
-                            <input
-                                type="number"
-                                name="sugarLevel"
-                                className="form-input"
-                                value={formData.sugarLevel}
-                                onChange={handleChange}
-                                placeholder="e.g., 140"
-                            />
+                            <input type="number" name="sugarLevel" className="form-input" value={formData.sugarLevel} onChange={handleChange} placeholder="e.g., 140" />
                         </div>
                     </div>
 
@@ -273,13 +237,7 @@ function NewPatient() {
                     <div className="form-grid">
                         <div className="form-group">
                             <label className="form-label">On Diabetes Medication? *</label>
-                            <select
-                                name="diabetesMed"
-                                className="form-select"
-                                value={formData.diabetesMed}
-                                onChange={handleChange}
-                                required
-                            >
+                            <select name="diabetesMed" className="form-select" value={formData.diabetesMed} onChange={handleChange} required>
                                 <option value="Yes">Yes</option>
                                 <option value="No">No</option>
                             </select>

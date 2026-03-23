@@ -121,9 +121,16 @@ router.get('/patient/:patientId', async (req, res) => {
 // Get summary report for all patients
 router.get('/summary', async (req, res) => {
     try {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
         const totalPatients = await Patient.countDocuments();
-        const eligiblePatients = await Patient.countDocuments({ isEligible: true });
-        const totalReadmissions = await Readmission.countDocuments();
+        const patientsVisitedThisMonth = await Patient.countDocuments({
+            createdAt: { $gte: startOfMonth }
+        });
+        const readmissionsThisMonth = await Readmission.countDocuments({
+            readmissionDate: { $gte: startOfMonth }
+        });
         const pendingFollowUps = await FollowUp.countDocuments({ isCompleted: false });
         const abnormalResults = await FollowUp.countDocuments({ result: 'Abnormal' });
 
@@ -140,12 +147,77 @@ router.get('/summary', async (req, res) => {
 
         res.json({
             totalPatients,
-            eligiblePatients,
-            ineligiblePatients: totalPatients - eligiblePatients,
-            totalReadmissions,
+            patientsVisitedThisMonth,
+            readmissionsThisMonth,
             pendingFollowUps,
             abnormalResults,
             ageGroups
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// Get chart data for visualizations
+router.get('/charts', async (req, res) => {
+    try {
+        // HbA1c distribution
+        const hba1cDist = await Patient.aggregate([
+            { $group: { _id: '$hba1c', count: { $sum: 1 } } }
+        ]);
+
+        // Monthly admissions (last 6 months)
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        const monthlyAdmissions = await Patient.aggregate([
+            { $match: { createdAt: { $gte: sixMonthsAgo } } },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$createdAt' },
+                        month: { $month: '$createdAt' }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1 } }
+        ]);
+
+        // Age group distribution
+        const ageGroups = await Patient.aggregate([
+            {
+                $bucket: {
+                    groupBy: '$age',
+                    boundaries: [0, 20, 30, 40, 50, 60, 70, 80, 120],
+                    default: '80+',
+                    output: { count: { $sum: 1 } }
+                }
+            }
+        ]);
+
+        // Gender distribution
+        const genderDist = await Patient.aggregate([
+            { $group: { _id: '$gender', count: { $sum: 1 } } }
+        ]);
+
+        // Follow-up results distribution
+        const followUpDist = await FollowUp.aggregate([
+            { $group: { _id: '$result', count: { $sum: 1 } } }
+        ]);
+
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        res.json({
+            hba1cDistribution: hba1cDist.map(d => ({ name: d._id || 'Unknown', value: d.count })),
+            monthlyAdmissions: monthlyAdmissions.map(d => ({
+                month: `${monthNames[d._id.month - 1]} ${d._id.year}`,
+                patients: d.count
+            })),
+            ageGroups: ageGroups.map(d => ({
+                range: d._id === '80+' ? '80+' : `${d._id}-${d._id + 9}`,
+                count: d.count
+            })),
+            genderDistribution: genderDist.map(d => ({ name: d._id || 'Unknown', value: d.count })),
+            followUpResults: followUpDist.map(d => ({ name: d._id || 'Unknown', value: d.count }))
         });
     } catch (err) {
         res.status(500).json({ error: err.message });

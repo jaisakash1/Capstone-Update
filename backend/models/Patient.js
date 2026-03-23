@@ -1,6 +1,37 @@
 const mongoose = require('mongoose');
 
 const patientSchema = new mongoose.Schema({
+    // Login credentials
+    patientId: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true
+    },
+    password: {
+        type: String
+    },
+    plainPassword: {
+        type: String
+    },
+    hospital: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Hospital'
+    },
+    email: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    lastUpdatedByHospital: {
+        type: Date,
+        default: null
+    },
+    lastViewedByPatient: {
+        type: Date,
+        default: null
+    },
+
     // Basic Info
     name: {
         type: String,
@@ -67,6 +98,30 @@ const patientSchema = new mongoose.Schema({
         enum: ['Yes', 'No'],
         required: true
     },
+
+    // Diseases
+    diseases: [{
+        name: { type: String, required: true },
+        diagnosedDate: { type: Date, default: Date.now },
+        status: {
+            type: String,
+            enum: ['Active', 'Managed', 'Resolved'],
+            default: 'Active'
+        },
+        notes: { type: String, default: '' }
+    }],
+
+    // Symptoms
+    symptoms: [{
+        name: { type: String, required: true },
+        severity: {
+            type: String,
+            enum: ['Mild', 'Moderate', 'Severe'],
+            default: 'Mild'
+        },
+        reportedDate: { type: Date, default: Date.now },
+        notes: { type: String, default: '' }
+    }],
 
     // Eligibility
     isEligible: {

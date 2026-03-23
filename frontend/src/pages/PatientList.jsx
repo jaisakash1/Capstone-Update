@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { patientAPI, reportAPI } from '../services/api';
 
 function PatientList() {
+    const navigate = useNavigate();
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState('all');
+    const [credentials, setCredentials] = useState(null);
 
     useEffect(() => {
         fetchPatients();
@@ -42,8 +45,26 @@ function PatientList() {
         window.open(url, '_blank');
     };
 
+    const viewCredentials = async (id) => {
+        try {
+            const res = await patientAPI.getCredentials(id);
+            setCredentials(res.data);
+        } catch (err) {
+            console.error('Error fetching credentials:', err);
+        }
+    };
+
+    const copyCredentials = () => {
+        if (credentials) {
+            const text = `Patient ID: ${credentials.patientId}\nPassword: ${credentials.password}`;
+            navigator.clipboard.writeText(text);
+            alert('Credentials copied!');
+        }
+    };
+
     const filteredPatients = patients.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase())
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        (p.patientId && p.patientId.toLowerCase().includes(search.toLowerCase()))
     );
 
     if (loading) {
@@ -65,31 +86,43 @@ function PatientList() {
                 <input
                     type="text"
                     className="form-input search-input"
-                    placeholder="🔍 Search patients by name..."
+                    placeholder="🔍 Search by name or patient ID..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
                 <div className="tabs">
-                    <button
-                        className={`tab ${filter === 'all' ? 'active' : ''}`}
-                        onClick={() => setFilter('all')}
-                    >
-                        All
-                    </button>
-                    <button
-                        className={`tab ${filter === 'eligible' ? 'active' : ''}`}
-                        onClick={() => setFilter('eligible')}
-                    >
-                        ✅ Eligible
-                    </button>
-                    <button
-                        className={`tab ${filter === 'ineligible' ? 'active' : ''}`}
-                        onClick={() => setFilter('ineligible')}
-                    >
-                        ❌ Ineligible
-                    </button>
+                    <button className={`tab ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>All</button>
+                    <button className={`tab ${filter === 'eligible' ? 'active' : ''}`} onClick={() => setFilter('eligible')}>✅ Eligible</button>
+                    <button className={`tab ${filter === 'ineligible' ? 'active' : ''}`} onClick={() => setFilter('ineligible')}>❌ Ineligible</button>
                 </div>
             </div>
+
+            {/* Credentials Modal */}
+            {credentials && (
+                <div className="modal-overlay" onClick={() => setCredentials(null)}>
+                    <div className="modal credentials-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header"><h2>🔐 Patient Credentials</h2></div>
+                        <div className="credentials-content">
+                            <div className="credential-field">
+                                <label>Patient Name</label>
+                                <div className="credential-value" style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>{credentials.name}</div>
+                            </div>
+                            <div className="credential-field">
+                                <label>Patient ID</label>
+                                <div className="credential-value">{credentials.patientId}</div>
+                            </div>
+                            <div className="credential-field">
+                                <label>Password</label>
+                                <div className="credential-value">{credentials.password}</div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                            <button className="btn btn-primary" onClick={copyCredentials}>📋 Copy</button>
+                            <button className="btn btn-outline" onClick={() => setCredentials(null)}>✓ Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="card">
                 {filteredPatients.length === 0 ? (
@@ -106,10 +139,9 @@ function PatientList() {
                             <thead>
                                 <tr>
                                     <th>Patient</th>
+                                    <th>Patient ID</th>
                                     <th>Age</th>
-                                    <th>Hospital Stay</th>
                                     <th>HbA1c</th>
-                                    <th>Medication</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -121,46 +153,34 @@ function PatientList() {
                                             <div>
                                                 <strong>{patient.name}</strong>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                    {patient.gender}
+                                                    {patient.gender} • {patient.email || 'No email'}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>{patient.age} yrs</td>
-                                        <td>{patient.timeInHospital} days</td>
                                         <td>
-                                            <span className={`badge ${patient.hba1c === 'Abnormal' ? 'badge-danger' :
-                                                    patient.hba1c === 'Normal' ? 'badge-success' :
-                                                        'badge-warning'
-                                                }`}>
+                                            <span style={{ fontFamily: 'Courier New', fontSize: '0.85rem', color: 'var(--accent-primary)' }}>
+                                                {patient.patientId || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td>{patient.age} yrs</td>
+                                        <td>
+                                            <span className={`badge ${patient.hba1c === 'Abnormal' ? 'badge-danger' : patient.hba1c === 'Normal' ? 'badge-success' : 'badge-warning'}`}>
                                                 {patient.hba1c}
                                             </span>
                                         </td>
-                                        <td>{patient.diabetesMed}</td>
                                         <td>
                                             {patient.isEligible ? (
                                                 <span className="badge badge-success">Eligible</span>
                                             ) : (
-                                                <span className="badge badge-danger" title={patient.eliminationReason}>
-                                                    Ineligible
-                                                </span>
+                                                <span className="badge badge-danger" title={patient.eliminationReason}>Ineligible</span>
                                             )}
                                         </td>
                                         <td>
                                             <div className="actions">
-                                                <button
-                                                    className="btn btn-sm btn-outline"
-                                                    onClick={() => downloadReport(patient._id)}
-                                                    title="Download Report"
-                                                >
-                                                    📄
-                                                </button>
-                                                <button
-                                                    className="btn btn-sm btn-danger"
-                                                    onClick={() => handleDelete(patient._id)}
-                                                    title="Delete"
-                                                >
-                                                    🗑️
-                                                </button>
+                                                <button className="btn btn-sm btn-primary" onClick={() => navigate(`/patients/${patient._id}`)} title="View & Edit">✏️</button>
+                                                <button className="btn btn-sm btn-outline" onClick={() => viewCredentials(patient._id)} title="View Credentials">🔐</button>
+                                                <button className="btn btn-sm btn-outline" onClick={() => downloadReport(patient._id)} title="Download Report">📄</button>
+                                                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(patient._id)} title="Delete">🗑️</button>
                                             </div>
                                         </td>
                                     </tr>
