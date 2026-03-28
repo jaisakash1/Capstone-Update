@@ -29,24 +29,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get dashboard stats — MUST be before /:id route
-router.get('/stats/dashboard', async (req, res) => {
-    try {
-        const total = await Patient.countDocuments();
-        const eligible = await Patient.countDocuments({ isEligible: true });
-        const pending = await Patient.countDocuments({ hba1c: 'Pending' });
-        const abnormalA1c = await Patient.countDocuments({ hba1c: 'Abnormal' });
-
-        res.json({
-            totalPatients: total,
-            eligiblePatients: eligible,
-            pendingLabReports: pending,
-            abnormalA1c: abnormalA1c
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
 
 // Get critical patients — abnormal results or overdue follow-ups
 router.get('/stats/critical', async (req, res) => {

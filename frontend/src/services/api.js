@@ -31,7 +31,6 @@ export const patientAPI = {
     create: (data) => api.post('/patients', data),
     update: (id, data) => api.put(`/patients/${id}`, data),
     delete: (id) => api.delete(`/patients/${id}`),
-    getStats: () => api.get('/patients/stats/dashboard'),
     getCritical: () => api.get('/patients/stats/critical'),
     getCredentials: (id) => api.get(`/patients/${id}/credentials`),
     resetPassword: (id) => api.post(`/patients/${id}/reset-password`),

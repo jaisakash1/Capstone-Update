@@ -141,29 +141,90 @@ const patientSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
-    }
+    },
+
+
+    riskScore: {
+    type: Number,
+    default: 0
+    },
+    riskLevel: {
+        type: String,
+        enum: ['Low', 'Moderate', 'High'],
+        default: 'Low'
+    },
+    recommendedAction: {
+        type: String,
+        default: ''
+    },
 });
 
 // Pre-save middleware to check eligibility
 patientSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
 
-    // Eligibility Check (matching C++ logic)
-    this.isEligible = true;
-    this.eliminationReason = null;
+    let score = 0;
 
-    if (this.timeInHospital < 2) {
+    // 🩺 Diabetes condition (already patient in system)
+    if (this.diabetesMed === 'Yes') score += 1;
+
+    // 🍬 Sugar Level
+    if (this.sugarLevel >= 200) score += 2;
+    else if (this.sugarLevel >= 140) score += 1;
+
+    // 🧪 HbA1c
+    if (this.hba1c === 'Abnormal') score += 2;
+
+    // 🏥 Past admissions (proxy)
+    if (this.inpatientVisits > 1) score += 1;
+
+    // ⏳ Stay duration
+    if (this.timeInHospital > 7) score += 1;
+
+    // 🚑 Emergency visits
+    if (this.emergencyVisits > 2) score += 2;
+    else if (this.emergencyVisits > 0) score += 1;
+
+    // 🌡️ Symptoms severity
+    if (this.symptoms && this.symptoms.length > 0) {
+        this.symptoms.forEach(s => {
+            if (s.severity === 'Severe') score += 2;
+            else if (s.severity === 'Moderate') score += 1;
+        });
+    }
+
+    // 🦠 Diseases
+    if (this.diseases && this.diseases.length > 0) {
+        this.diseases.forEach(d => {
+            if (d.status === 'Active') score += 1;
+        });
+    }
+
+    // ❤️ Blood Pressure
+    if (this.bloodPressure?.systolic > 140 || this.bloodPressure?.diastolic > 90) {
+        score += 1;
+    }
+
+    // 👴 Age factor
+    if (this.age > 60) score += 1;
+
+    this.riskScore = score;
+
+    if (score <= 2) {
+        this.riskLevel = 'Low';
+        this.recommendedAction = 'Routine discharge. Standard OPD follow-up.';
+        this.isEligible = false; // low readmission
+        this.eliminationReason = 'Low risk patient';
+    } else if (score <= 5) {
+        this.riskLevel = 'Moderate';
+        this.recommendedAction = 'Follow-up in 7–14 days. Reinforce diet and medication advice.';
         this.isEligible = false;
-        this.eliminationReason = 'Stay too short (less than 2 days)';
-    } else if (this.emergencyVisits > 3) {
-        this.isEligible = false;
-        this.eliminationReason = 'Too many emergency visits (more than 3)';
-    } else if (this.diabetesMed === 'No') {
-        this.isEligible = false;
-        this.eliminationReason = 'Not on diabetes medication';
-    } else if (this.hba1c === 'Normal') {
-        this.isEligible = false;
-        this.eliminationReason = 'A1C is normal (low priority)';
+        this.eliminationReason = 'Moderate risk patient';
+    } else {
+        this.riskLevel = 'High';
+        this.recommendedAction = 'Follow-up in 3–7 days. Counseling + medication review.';
+        this.isEligible = true; // 🔥 high readmission chance
+        this.eliminationReason = null;
     }
 
     next();
