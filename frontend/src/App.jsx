@@ -2,10 +2,9 @@ import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
 import NewPatient from './pages/NewPatient';
 import PatientDetail from './pages/PatientDetail';
-import PatientList from './pages/PatientList';
+import Dashboard from './pages/Dashboard';
 import Readmission from './pages/Readmission';
 import FollowUp from './pages/FollowUp';
 import NearbyHospitals from './pages/NearbyHospitals';
@@ -41,13 +40,8 @@ function HospitalLayout() {
                 <nav>
                     <ul className="nav-menu">
                         <li className="nav-item">
-                            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} end>
-                                <span className="nav-icon">📊</span> Dashboard
-                            </NavLink>
-                        </li>
-                        <li className="nav-item">
                             <NavLink to="/patients" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                                <span className="nav-icon">👥</span> All Patients
+                                <span className="nav-icon">👥</span> Dashboard
                             </NavLink>
                         </li>
                         <li className="nav-item">
@@ -83,7 +77,7 @@ function HospitalLayout() {
                     </ul>
                 </nav>
                 <div className="sidebar-footer">
-                    <ThemeToggle />
+                    {/* <ThemeToggle /> */}
                     <div className="user-info">
                         <span className="user-name">🏥 {user?.name || 'Hospital'}</span>
                         <span className="user-id">{user?.hospitalId}</span>
@@ -93,8 +87,7 @@ function HospitalLayout() {
             </aside>
             <main className="main-content">
                 <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/patients" element={<PatientList />} />
+                    <Route path="/patients" element={<Dashboard />} />
                     <Route path="/patients/:id" element={<PatientDetail />} />
                     <Route path="/new-patient" element={<NewPatient />} />
                     <Route path="/readmission" element={<Readmission />} />
