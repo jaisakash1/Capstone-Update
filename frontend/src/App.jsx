@@ -31,14 +31,14 @@ function HospitalLayout() {
     const { logout, user } = useAuth();
 
     return (
-        <div className="app-container">
-            <aside className="sidebar">
-                <div className="logo">
+        <div className="app-container bgwhite">
+            <aside className="sidebar bgwhite">
+                <div className="logo bgwhite">
                     <h1>🏥 DiabetCare</h1>
                     <span>Hospital Management</span>
                 </div>
-                <nav>
-                    <ul className="nav-menu">
+                <nav className='bgwhite hww'>
+                    <ul className="nav-menu bgwhite">
                         <li className="nav-item">
                             <NavLink to="/patients" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                                 <span className="nav-icon">👥</span> Dashboard
@@ -76,16 +76,16 @@ function HospitalLayout() {
                         </li>
                     </ul>
                 </nav>
-                <div className="sidebar-footer">
+                <div className="sidebar-footer bgwhite">
                     {/* <ThemeToggle /> */}
-                    <div className="user-info">
-                        <span className="user-name">🏥 {user?.name || 'Hospital'}</span>
-                        <span className="user-id">{user?.hospitalId}</span>
+                    <div className="user-info bgwhite">
+                        <span className="user-name bgwhite">🏥 {user?.name || 'Hospital'}</span>
+                        <span className="user-id bgwhite">{user?.hospitalId}</span>
                     </div>
                     <button className="logout-btn" onClick={logout}>Logout</button>
                 </div>
             </aside>
-            <main className="main-content">
+            <main className="main-content bgwhite">
                 <Routes>
                     <Route path="/patients" element={<Dashboard />} />
                     <Route path="/patients/:id" element={<PatientDetail />} />
@@ -106,14 +106,14 @@ function PatientLayout() {
     const { logout, user } = useAuth();
 
     return (
-        <div className="app-container">
-            <aside className="sidebar patient-sidebar">
+        <div className="app-container bgwhite">
+            <aside className="sidebar patient-sidebar bgwhite">
                 <div className="logo">
                     <h1>🏥 DiabetCare</h1>
                     <span>Patient Portal</span>
                 </div>
                 <nav>
-                    <ul className="nav-menu">
+                    <ul className="nav-menu bgwhite hww">
                         <li className="nav-item">
                             <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} end>
                                 <span className="nav-icon">🏠</span> Dashboard
@@ -147,7 +147,7 @@ function PatientLayout() {
                     </ul>
                 </nav>
                 <div className="sidebar-footer">
-                    <ThemeToggle />
+                    {/* <ThemeToggle /> */}
                     <div className="user-info">
                         <span className="user-name">👤 {user?.name || 'Patient'}</span>
                         <span className="user-id">{user?.patientId}</span>
